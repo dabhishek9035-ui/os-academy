@@ -87,6 +87,71 @@ export function parseReferenceString(s: string): { addresses: number[] } | { err
   return { addresses };
 }
 
+/** One replacement-policy decision, with the full frame snapshot for UI. */
+export interface ReplacementStep {
+  page: number;
+  frames: (number | null)[];
+  fault: boolean;
+  /** Index of the frame whose page was evicted (faults with a full table). */
+  victimFrame: number | null;
+}
+
+/**
+ * Pure: FIFO/LRU/Optimal replay with per-access frame snapshots. Same
+ * conventions as simulateAll (which stays the counts-only fast path); the
+ * step list lets the lab draw the frame grid without duplicating policy.
+ */
+export function simulateSteps(
+  pages: number[],
+  numFrames: number,
+  algorithm: ReplacementAlgorithm,
+): ReplacementStep[] {
+  const frames: (number | null)[] = Array(numFrames).fill(null);
+  const loadedAt: number[] = Array(numFrames).fill(0);
+  const lastUsed: number[] = Array(numFrames).fill(0);
+  const steps: ReplacementStep[] = [];
+  for (let t = 0; t < pages.length; t += 1) {
+    const page = pages[t];
+    const idx = frames.indexOf(page);
+    let fault = idx < 0;
+    let victimFrame: number | null = null;
+    if (!fault) {
+      lastUsed[idx] = t;
+    } else {
+      const free = frames.indexOf(null);
+      if (free >= 0) {
+        frames[free] = page;
+        loadedAt[free] = t;
+        lastUsed[free] = t;
+      } else {
+        let victim = 0;
+        if (algorithm === "fifo") {
+          victim = loadedAt.indexOf(Math.min(...loadedAt));
+        } else if (algorithm === "lru") {
+          victim = lastUsed.indexOf(Math.min(...lastUsed));
+        } else {
+          // optimal: furthest next use; never used again → evict first
+          let furthest = -1;
+          for (let f = 0; f < numFrames; f += 1) {
+            const nextUse = pages.indexOf(frames[f] as number, t + 1);
+            const dist = nextUse === -1 ? Infinity : nextUse;
+            if (dist > furthest) {
+              furthest = dist;
+              victim = f;
+            }
+          }
+        }
+        victimFrame = victim;
+        frames[victim] = page;
+        loadedAt[victim] = t;
+        lastUsed[victim] = t;
+      }
+    }
+    steps.push({ page, frames: [...frames], fault, victimFrame });
+  }
+  return steps;
+}
+
 /** Pure: FIFO/LRU/Optimal fault+hit counts over a PAGE-NUMBER string. */
 export function simulateAll(
   pages: number[],

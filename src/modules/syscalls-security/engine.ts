@@ -45,6 +45,32 @@ export type SyscallAction = "tick" | "call" | "reset";
 
 export const syscallEngine: SimulationEngine<SyscallState, SyscallAction> = {
   id: "syscall",
+  // Demo: open a file, read it, close it — each call walks the full
+  // user→trap→kernel→return→resume transition.
+  script: [
+    { type: "call", payload: { name: "open", args: '"/docs/notes.txt"' } },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "call", payload: { name: "read" } },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "call", payload: { name: "close" } },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+  ],
+
   initialState() {
     return {
       stageIndex: 0,
@@ -191,6 +217,15 @@ export function checkPermission(
 
 export const protectionEngine: SimulationEngine<ProtectionState, ProtectionAction> = {
   id: "protection",
+  // Demo: alice is denied root's file, su to root and get in, then touch
+  // another process's memory and hit the protection boundary.
+  script: [
+    { type: "attempt", payload: { target: "/etc/config", operation: "read" } },
+    { type: "su", payload: "root" },
+    { type: "attempt", payload: { target: "/etc/config", operation: "read" } },
+    { type: "memory-access", payload: { pid: 7, addr: 250 } },
+  ],
+
   initialState() {
     return {
       files: [

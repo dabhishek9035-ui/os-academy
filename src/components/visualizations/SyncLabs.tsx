@@ -150,32 +150,38 @@ function DiningViz({ state }: { state: DiningState }) {
                   : "var(--line)";
             return (
               <g key={p.id}>
-                <circle cx={x} cy={y} r={26} fill="var(--panel)" stroke={color} strokeWidth={deadlocked ? 2.4 : 1.6} />
+                <circle cx={x} cy={y} r={30} fill="var(--panel)" stroke={color} strokeWidth={deadlocked ? 2.4 : 1.6} />
                 <text x={x} y={y - 4} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="monospace">
                   P{p.id}
                 </text>
-                <text x={x} y={y + 10} textAnchor="middle" fontSize={9} fill="var(--ink-faint)">
+                <text x={x} y={y + 10} textAnchor="middle" fontSize={12} fill="var(--ink-faint)">
                   {p.state}
                 </text>
                 <circle
                   cx={fx}
                   cy={fy}
-                  r={7}
+                  r={10}
                   fill={held ? color : "var(--panel-soft)"}
                   stroke="var(--line)"
                 />
-                <text x={fx} y={fy + 3} textAnchor="middle" fontSize={7} fill="var(--ink-muted)" fontFamily="monospace">
+                <text x={fx} y={fy + 4} textAnchor="middle" fontSize={12} fill="var(--ink-muted)" fontFamily="monospace">
                   f{(i + 1) % 5}
                 </text>
               </g>
             );
           })}
+          {/* The shared table: a drawn bowl, no emoji-as-icon */}
           <circle cx={cx} cy={cy} r={30} fill="var(--accent-soft)" />
-          <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="monospace">
-            🍜
-          </text>
+          <path
+            d={`M ${cx - 12} ${cy - 2} a 12 8 0 0 0 24 0 z`}
+            fill="var(--panel)"
+            stroke="var(--ink-muted)"
+            strokeWidth={1.5}
+          />
+          <line x1={cx - 14} y1={cy - 2} x2={cx + 14} y2={cy - 2} stroke="var(--ink-muted)" strokeWidth={1.5} />
+          <line x1={cx + 4} y1={cy - 2} x2={cx + 12} y2={cy - 14} stroke="var(--ink-muted)" strokeWidth={1.5} />
         </svg>
-        <p className="mt-1 text-center text-[11px] text-ink-faint">
+        <p className="mt-1 text-center text-xs text-ink-faint">
           {deadlocked
             ? "DEADLOCKED — every philosopher holds one fork and waits."
             : `meals so far: ${state.meals}`}

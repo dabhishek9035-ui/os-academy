@@ -5,7 +5,6 @@ import type { Equation, Lesson, LessonSection } from "@/types";
 import { getSimComponent, simTitle, SimPlaceholder } from "@/components/visualizations/registry";
 import { Paragraphs, Inline } from "./Inline";
 import { CheckIcon, XIcon } from "@/components/ui/icons";
-import { PredictBox } from "./PredictBox";
 
 const SECTION_LABELS: Record<LessonSection["kind"], string> = {
   problem: "The problem",
@@ -20,12 +19,11 @@ const SECTION_LABELS: Record<LessonSection["kind"], string> = {
   note: "Assumptions & simplifications",
 };
 
-export function LessonRenderer({ lesson, hideHeader = false }: { lesson: Lesson; hideHeader?: boolean }) {
+export function LessonRenderer({ lesson }: { lesson: Lesson }) {
   return (
     <article className="space-y-8" aria-label={lesson.title}>
-      {hideHeader ? null : (
       <header>
-        <h1 className="text-2xl font-bold text-ink sm:text-3xl">{lesson.title}</h1>
+        <h1 className="text-2xl font-semibold text-ink sm:text-3xl">{lesson.title}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-faint">
           <span className="chip">{lesson.minutes} min</span>
           {lesson.objectives.length > 0 ? (
@@ -35,7 +33,6 @@ export function LessonRenderer({ lesson, hideHeader = false }: { lesson: Lesson;
           ) : null}
         </div>
       </header>
-      )}
 
       {(() => {
         const seenSims = new Set<string>();
@@ -101,7 +98,6 @@ function SectionBlock({
               label={`The “${simTitle(section.simId)}” simulation is being connected.`}
             />
           )}
-          <PredictBox simId={section.simId} />
           {section.kind === "experiment" ? (
             <div className="rounded-xl border border-accent/30 bg-accent-soft px-4 py-3">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-ink">
@@ -140,7 +136,7 @@ function SectionBlock({
             {section.steps.map((step, i) => (
               <li key={i} className="card panel-pad">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-accent-soft font-mono text-[11px] text-accent">
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-accent-soft font-mono text-xs text-accent">
                     {i + 1}
                   </span>
                   {step.title}

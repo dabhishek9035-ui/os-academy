@@ -124,7 +124,7 @@ function RagViz({ state, dispatch }: { state: RagState; dispatch: Dispatch }) {
                     stroke={dead ? "var(--bad)" : "var(--accent)"}
                     strokeWidth={dead ? 2.4 : 1.6}
                   />
-                  <text x={pos[p].x} y={pos[p].y + 4} textAnchor="middle" fontSize={11} fill="var(--ink)" fontFamily="monospace">
+                  <text x={pos[p].x} y={pos[p].y + 4} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="monospace">
                     {p}
                   </text>
                 </g>
@@ -133,17 +133,17 @@ function RagViz({ state, dispatch }: { state: RagState; dispatch: Dispatch }) {
             {state.resources.map((r) => (
               <g key={r.id}>
                 <rect x={pos[r.id].x - 24} y={pos[r.id].y - 14} width={48} height={28} rx={4} fill="var(--panel)" stroke="var(--line)" strokeWidth={1.6} />
-                <text x={pos[r.id].x} y={pos[r.id].y - 2} textAnchor="middle" fontSize={10} fill="var(--ink)" fontFamily="monospace">
+                <text x={pos[r.id].x} y={pos[r.id].y - 2} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="monospace">
                   {r.id}
                 </text>
-                <text x={pos[r.id].x} y={pos[r.id].y + 9} textAnchor="middle" fontSize={9} fill="var(--ink-faint)" fontFamily="monospace">
+                <text x={pos[r.id].x} y={pos[r.id].y + 9} textAnchor="middle" fontSize={12} fill="var(--ink-faint)" fontFamily="monospace">
                   {r.units}u · {freeOf(r.id)} free
                 </text>
               </g>
             ))}
           </svg>
         </div>
-        <p className="mt-1 text-[11px] text-ink-faint">
+        <p className="mt-1 text-xs text-ink-faint">
           Solid green = assignment (held), dashed amber = pending request; requests from deadlocked
           processes turn red after detection.
         </p>

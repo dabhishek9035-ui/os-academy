@@ -96,6 +96,41 @@ export const computerEngine: SimulationEngine<ComputerState, ComputerAction> = {
     };
   },
 
+  // Demo: a keypress travels keyboard→CPU→RAM, the CPU draws to the screen,
+  // then chaos mode shows two direct transfers colliding.
+  script: [
+    { type: "send", payload: { from: "keyboard", to: "cpu" } },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "send", payload: { from: "cpu", to: "ram" } },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "send", payload: { from: "cpu", to: "screen" } },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "toggle-os" },
+    { type: "send", payload: { from: "ram", to: "disk" } },
+    { type: "send", payload: { from: "network", to: "ram" } },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+    { type: "tick" },
+  ],
+
+  done(state) {
+    // The scripted story has run its course once the collided transfers
+    // drained and at least five transfers completed.
+    return state.completed >= 5 && state.transfers.length === 0 && state.collisions > 0;
+  },
+
   step(state, action: SimAction<ComputerAction>) {
     switch (action.type) {
       case "select":

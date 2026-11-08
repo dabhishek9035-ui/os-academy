@@ -272,7 +272,10 @@ export const boundedBufferEngine: SimulationEngine<BufferState, BufferAction> = 
     switch (action.type) {
       case "tick": {
         const events: SimEvent[] = [];
-        let { buffer, semaphores, produced, consumed, nextItemId } = state;
+        // Copy the buffer array first: the previous state keeps its own copy,
+        // so step-back history and replay stay correct (engines stay pure).
+        const buffer = [...state.buffer];
+        let { semaphores, produced, consumed, nextItemId } = state;
         const allDone =
           state.producers.every((p) => p.remainingItems <= 0 && p.state === "done") &&
           state.consumers.every((c) => c.remainingItems <= 0 || c.state === "done");

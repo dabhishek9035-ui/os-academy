@@ -7,7 +7,6 @@ import {
   PLAYBACK_SPEEDS,
   type UseSimulationReturn,
 } from "@/lib/simulation/useSimulation";
-import { MissionPanel } from "@/components/game/MissionPanel";
 import { LogPanel } from "./LogPanel";
 import {
   PauseIcon,
@@ -35,7 +34,6 @@ export function SimShell<S, A extends string>({
   note,
   autoPlay = false,
   compact = false,
-  missionSimId,
 }: {
   engine: SimulationEngine<S, A>;
   title: string;
@@ -49,8 +47,6 @@ export function SimShell<S, A extends string>({
   note?: string;
   autoPlay?: boolean;
   compact?: boolean;
-  /** If this lab has sim missions, pass its simId to activate the layer. */
-  missionSimId?: string;
 }) {
   const sim = useSimulation(engine, { autoPlay });
   const explainedId = useId();
@@ -80,6 +76,19 @@ export function SimShell<S, A extends string>({
         <span>{explanation}</span>
       </div>
 
+      {sim.done ? (
+        <p
+          role="status"
+          className="flex items-start gap-2 border-b border-line bg-panel-soft px-4 py-2 text-[13px] text-ink"
+        >
+          <span className="section-label mt-0.5 shrink-0 text-ok">Done</span>
+          <span>
+            Scenario finished — press <strong>Reset</strong> to run it again, or
+            keep clicking the lab to experiment from here.
+          </span>
+        </p>
+      ) : null}
+
       <div className={compact ? "p-3" : "p-4"}>
         {typeof children === "function"
           ? (children as (s: SimControls<S, A>) => ReactNode)(sim)
@@ -92,12 +101,6 @@ export function SimShell<S, A extends string>({
           {stateEvents ? <LogPanel events={stateEvents} /> : null}
         </div>
       )}
-
-      {missionSimId ? (
-        <div className="border-t border-line px-4 py-3">
-          <MissionPanel simId={missionSimId} state={sim.state} />
-        </div>
-      ) : null}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-line bg-panel-soft px-4 py-2.5">
         <button
@@ -158,6 +161,12 @@ export function SimShell<S, A extends string>({
       {note ? (
         <p className="border-t border-line px-4 py-2 text-xs text-ink-faint">
           <strong className="font-semibold text-ink-muted">Model notes:</strong> {note}
+        </p>
+      ) : null}
+      {sim.historyTrimmed ? (
+        <p className="border-t border-line px-4 py-2 text-xs text-ink-faint">
+          History trimmed — the deepest step-back states were dropped to bound
+          memory. Reset replays the full scenario from the start.
         </p>
       ) : null}
     </div>

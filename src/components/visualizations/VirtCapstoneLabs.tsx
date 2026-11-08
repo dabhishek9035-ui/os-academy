@@ -85,12 +85,12 @@ function VirtViz({ state, dispatch }: { state: VirtState; dispatch: VirtDispatch
               />
             </label>
           ))}
-          <p className={`mt-2 rounded-md px-2 py-1 text-[11px] ${total > state.hostCpuCapacity ? "bg-warn/15 text-warn" : "text-ink-faint"}`}>
+          <p className={`mt-2 rounded-md px-2 py-1 text-xs ${total > state.hostCpuCapacity ? "bg-warn/15 text-warn" : "text-ink-faint"}`}>
             demand {total}/{state.hostCpuCapacity}%
             {total > state.hostCpuCapacity ? " — OVERCOMMIT" : ""}
           </p>
         </div>
-        <div className="rounded-lg border border-line bg-bg-soft p-3 text-[11px] leading-relaxed text-ink-muted">
+        <div className="rounded-lg border border-line bg-bg-soft p-3 text-xs leading-relaxed text-ink-muted">
           {state.mode === "vm" ? (
             <>
               <strong className="text-ink">VM:</strong> each guest boots its own kernel on emulated
@@ -167,7 +167,7 @@ function MpViz({ state }: { state: MultiState }) {
       <div className="flex flex-wrap gap-1.5">
         <span className="section-label mr-1">Tasks</span>
         {state.tasks.map((t) => (
-          <span key={t.id} className="chip text-[10px]">
+          <span key={t.id} className="chip text-xs">
             {t.id}({t.duration}) {t.end !== null ? `done@${t.end}` : t.start !== null ? "running" : "waiting"}
           </span>
         ))}
@@ -251,11 +251,11 @@ function CapstoneViz({ state, dispatch }: { state: CapstoneState; dispatch: CapD
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">{stage.narrative}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {stage.subsystems.map((s) => (
-            <span key={s} className="chip text-[10px]">
+            <span key={s} className="chip text-xs">
               {s}
             </span>
           ))}
-          <a href={`/lesson/${stage.lessonRef}`} className="chip text-[10px] hover:border-accent/50">
+          <a href={`/lesson/${stage.lessonRef}`} className="chip text-xs hover:border-accent/50">
             lesson: {stage.lessonRef.split("/")[1]?.replace(/-/g, " ")} ↗
           </a>
         </div>

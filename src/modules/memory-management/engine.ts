@@ -112,6 +112,16 @@ export const memoryEngine: SimulationEngine<MemoryState, MemoryAction> = {
     return recomputeStats(state);
   },
 
+  // Demo: free a stranded process, watch first-fit place two new ones into
+  // the holes (leaving unusable slivers), free another, then compact.
+  script: [
+    { type: "free", payload: "P2" },
+    { type: "alloc", payload: { pid: "C", size: 6 } },
+    { type: "alloc", payload: { pid: "D", size: 10 } },
+    { type: "free", payload: "P1" },
+    { type: "compact" },
+  ],
+
   step(state, action: SimAction<MemoryAction>) {
     switch (action.type) {
       case "alloc": {

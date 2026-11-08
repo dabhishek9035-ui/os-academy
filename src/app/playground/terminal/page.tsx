@@ -9,7 +9,6 @@ import {
 } from "@/lib/commands/registry";
 import { useSystemStore } from "@/lib/commands/system-store";
 import { useHasMounted } from "@/lib/useHasMounted";
-import { useGameStore } from "@/lib/game/player";
 import { processColor } from "@/types";
 
 interface HistoryEntry {
@@ -54,10 +53,8 @@ export default function TerminalPage() {
     setHistory((h) => [...h.slice(-300), { id: idRef.current++, kind: "output", lines }]);
   }, []);
 
-  const trackTerminal = useGameStore((s) => s.trackTerminal);
   const run = useCallback(
     (raw: string) => {
-      trackTerminal();
       const lines = executeLine(raw, {
         system: () => useSystemStore.getState(),
         dispatch,
@@ -76,7 +73,7 @@ export default function TerminalPage() {
       setInput("");
       setHistoryIdx(null);
     },
-    [dispatch, resetAll, trackTerminal],
+    [dispatch, resetAll],
   );
 
   useEffect(() => {
@@ -98,7 +95,7 @@ export default function TerminalPage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-bold text-ink">Educational terminal</h1>
+        <h1 className="text-2xl font-semibold text-ink">Educational terminal</h1>
         <p className="mt-1.5 max-w-2xl text-sm text-ink-muted">
           Type commands to drive the same simulation engines the visual labs
           use — the panels below update live. Invalid input fails honestly.
@@ -301,7 +298,7 @@ function TimelineStrip({
           />
         ))}
       </div>
-      <p className="text-[11px] text-ink-faint">
+      <p className="text-xs text-ink-faint">
         {algorithm.toUpperCase()} · {cursor}/{timeline.length} decisions revealed · idle shown in red
       </p>
     </div>

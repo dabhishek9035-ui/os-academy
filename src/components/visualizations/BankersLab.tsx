@@ -13,7 +13,6 @@ export function BankersLab() {
   return (
     <SimShell
       engine={bankersEngine}
-      missionSimId="bankers-lab"
       title="Banker's Algorithm Lab"
       description="Edit allocation, max claim and available; try requests and see the safe sequence."
       toolbar={(sim) => (
@@ -102,7 +101,7 @@ function BankersViz({ state, dispatch }: { state: BankersState; dispatch: Dispat
           <span className="section-label">Available</span>
           <div className="mt-1.5 flex gap-1.5">
             {state.available.map((v, j) => (
-              <label key={j} className="flex flex-col items-center gap-0.5 text-[10px] text-ink-faint">
+              <label key={j} className="flex flex-col items-center gap-0.5 text-xs text-ink-faint">
                 {state.resourceNames[j]}
                 <input
                   type="number"
@@ -138,7 +137,7 @@ function BankersViz({ state, dispatch }: { state: BankersState; dispatch: Dispat
           ))}
         </select>
         {state.resourceNames.map((name, j) => (
-          <label key={name} className="flex items-center gap-1 text-[10px] text-ink-faint">
+          <label key={name} className="flex items-center gap-1 text-xs text-ink-faint">
             {name}
             <input
               type="number"
@@ -179,9 +178,13 @@ function ResultPanel({ state }: { state: BankersState }) {
           </p>
           <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{r.reason}</p>
           {r.granted && r.safeSequence.length > 0 ? (
-            <p className="mt-1.5 font-mono text-xs text-accent">
-              safe sequence: {r.safeSequence.join(" → ")}
-            </p>
+            <SafeSequenceWalk
+              sequence={r.safeSequence}
+              processNames={state.processNames}
+              allocation={state.allocation}
+              available={state.available}
+              resourceNames={state.resourceNames}
+            />
           ) : null}
         </>
       ) : (
@@ -189,6 +192,91 @@ function ResultPanel({ state }: { state: BankersState }) {
           Run a safety check or submit a request — the reasoning appears here and in the event log.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Steps through the safe sequence one finish at a time: each row shows the
+ * work vector BEFORE the process runs, the process finishing, and the work
+ * vector AFTER it releases its allocation — the Banker's algorithm made
+ * visible instead of a bare list of names.
+ */
+function SafeSequenceWalk({
+  sequence,
+  processNames,
+  allocation,
+  available,
+  resourceNames,
+}: {
+  sequence: string[];
+  processNames: string[];
+  allocation: number[][];
+  available: number[];
+  resourceNames: string[];
+}) {
+  const [step, setStep] = useState(sequence.length);
+
+  // workAfter[i] = available after the first i processes finished.
+  const workAfter: number[][] = [available];
+  for (let i = 0; i < sequence.length; i += 1) {
+    const pi = processNames.indexOf(sequence[i]);
+    const prev = workAfter[i];
+    workAfter.push(prev.map((v, j) => v + (allocation[pi]?.[j] ?? 0)));
+  }
+
+  const shown = Math.max(0, Math.min(step, sequence.length));
+  const vec = (v: number[]) => `[${v.join(", ")}]`;
+
+  return (
+    <div className="mt-2 rounded-md border border-line bg-panel p-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="section-label">Why it is safe — step by step</span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            className="btn btn-ghost px-2 py-1 text-xs"
+            onClick={() => setStep(Math.max(0, shown - 1))}
+            disabled={shown === 0}
+            aria-label="Previous safety step"
+          >
+            ←
+          </button>
+          <span className="font-mono text-xs text-ink-muted">
+            {shown}/{sequence.length}
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost px-2 py-1 text-xs"
+            onClick={() => setStep(Math.min(sequence.length, shown + 1))}
+            disabled={shown === sequence.length}
+            aria-label="Next safety step"
+          >
+            →
+          </button>
+        </div>
+      </div>
+      <ol className="mt-2 space-y-1 text-xs">
+        <li className="font-mono text-ink-muted">
+          start: work = available = {vec(workAfter[0])}
+        </li>
+        {sequence.slice(0, shown).map((pid, i) => (
+          <li
+            key={pid}
+            className={`font-mono ${
+              i === shown - 1 ? "font-semibold text-ink" : "text-ink-muted"
+            }`}
+          >
+            {pid} runs (need ≤ work {vec(workAfter[i])}) → finishes, releases →
+            work = {vec(workAfter[i + 1])}
+          </li>
+        ))}
+        {shown === sequence.length ? (
+          <li className="font-medium text-ok">
+            all processes finish — the state is safe ✓
+          </li>
+        ) : null}
+      </ol>
     </div>
   );
 }

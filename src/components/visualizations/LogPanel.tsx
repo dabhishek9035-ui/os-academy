@@ -43,7 +43,7 @@ export function LogPanel({
                 className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[e.severity ?? "info"]}`}
                 aria-hidden
               />
-              <span className="font-mono text-[11px] text-ink-faint">{e.time}</span>
+              <span className="font-mono text-xs text-ink-faint">{e.time}</span>
               <span className="text-ink-muted">
                 {e.label}
                 {e.detail ? <span className="text-ink-faint"> — {e.detail}</span> : null}

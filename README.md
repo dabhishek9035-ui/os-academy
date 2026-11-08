@@ -84,3 +84,25 @@ tests: `npx vitest run`. Browser-level flows (start-from-zero → lesson →
 simulation → assessment → unlock → refresh-persistence) were verified manually
 during development; `npm test` remains the regression gate.
 # os-academy
+
+## Cloud sync (optional — Supabase + PostgreSQL + accounts)
+
+By default progress never leaves the browser. Optionally, create a free
+[Supabase](https://supabase.com) project and the app gains email+password
+accounts with per-user PostgreSQL storage (row-level security), so progress:
+
+- survives clearing browser site data (sign in again — it all returns),
+- follows the account across devices and browsers,
+- is pushed automatically ~1.5 s after every change while signed in.
+
+Setup takes about five minutes and is documented in
+[`supabase/README.md`](supabase/README.md) (create project → run
+`supabase/schema.sql` → paste two keys into `.env.local`). Without those keys
+the app behaves exactly as before: pure local, no network calls to any
+backend.
+
+Implementation notes: sessions are managed by Supabase Auth with cookie
+storage (refreshed in `src/middleware.ts`); each user gets one JSONB row per
+store (`user_progress`, `user_settings`) guarded by RLS policies; the sync
+policy is "newest write wins per store" (`src/lib/sync/merge.ts`, unit
+tested); the local copy always remains as an offline cache.

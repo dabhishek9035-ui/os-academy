@@ -22,3 +22,10 @@ next-env.d.ts
 # test artifacts
 /test-results/
 /artifacts/
+
+# env / secrets
+.env*.local
+.env
+
+# local artifacts
+/src.zip

@@ -580,4 +580,14 @@ export const processesEngine: SimulationEngine<ProcessState, ProcessAction> = {
   initialState: freshState,
   step,
   explain,
+  // The scenario ends once every process has exited (or waits in zombie
+  // state for a parent's wait()) and nothing is runnable any more.
+  done(state) {
+    return (
+      state.processes.length > 0 &&
+      state.processes.every(
+        (p) => p.state === "terminated" || p.state === "zombie",
+      )
+    );
+  },
 };

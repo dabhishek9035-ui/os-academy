@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import {
   ALL_GLOSSARY,
   CONCEPT_EDGES,
@@ -10,9 +9,6 @@ import {
   glossaryById,
 } from "@/data/glossary";
 import { MODULE_MAP } from "@/data/curriculum/config";
-import { RARITY_META, rarityOf, codexCounts, type Rarity } from "@/lib/game/codex";
-import { useGameStore } from "@/lib/game/player";
-import { useHasMounted } from "@/lib/useHasMounted";
 import type { GlossaryEntry } from "@/types";
 
 /** Simple Levenshtein distance for forgiving search ("semfore" → "semaphore"). */
@@ -32,21 +28,23 @@ function editDistance(a: string, b: string, max = 3): number {
   return dp[a.length][b.length];
 }
 
-function searchEntries(query: string, onlySeen: boolean): GlossaryEntry[] {
-  const seen = new Set(useGameStore.getState().codexSeen);
-  const pool = onlySeen ? ALL_GLOSSARY.filter((e) => seen.has(e.id)) : ALL_GLOSSARY;
+function searchEntries(query: string): GlossaryEntry[] {
   const q = query.trim().toLowerCase();
-  if (!q) return pool;
-  const scored = pool.map((e) => {
+  if (!q) return ALL_GLOSSARY;
+  const scored = ALL_GLOSSARY.map((e) => {
     const term = e.term.toLowerCase();
     const full = (e.fullForm ?? "").toLowerCase();
     let score = 0;
     if (term === q) score = 100;
     else if (term.startsWith(q)) score = 80;
     else if (term.includes(q) || full.includes(q)) score = 60;
-    else if (q.length >= 4 && editDistance(q, term, 3) <= Math.min(3, Math.floor(term.length / 3)))
+    else if (
+      q.length >= 4 &&
+      editDistance(q, term, 3) <= Math.min(3, Math.floor(term.length / 3))
+    )
       score = 40;
-    else if (e.simple.toLowerCase().includes(q) || e.technical.toLowerCase().includes(q)) score = 20;
+    else if (e.simple.toLowerCase().includes(q) || e.technical.toLowerCase().includes(q))
+      score = 20;
     return { e, score };
   });
   return scored
@@ -55,180 +53,130 @@ function searchEntries(query: string, onlySeen: boolean): GlossaryEntry[] {
     .map((s) => s.e);
 }
 
-export default function CodexPage() {
-  const mounted = useHasMounted();
-  const codexSeen = useGameStore((s) => s.codexSeen);
+export default function GlossaryPage() {
   const [query, setQuery] = useState("");
-  const [moduleFilter, setModuleFilter] = useState("all");
-  const [rarityFilter, setRarityFilter] = useState<"all" | Rarity>("all");
+  const [moduleFilter, setModuleFilter] = useState<string>("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [showGraph, setShowGraph] = useState(false);
-  const seen = useMemo(() => new Set(codexSeen), [codexSeen]);
-  const counts = useMemo(() => codexCounts(), [codexSeen]);
 
-  const results = useMemo(() => searchEntries(query, false), [query, codexSeen]);
+  const results = useMemo(() => searchEntries(query), [query]);
   const filtered = useMemo(
     () =>
-      results.filter(
-        (e) =>
-          (moduleFilter === "all" || e.moduleId === moduleFilter) &&
-          (rarityFilter === "all" || rarityOf(e.id) === rarityFilter),
-      ),
-    [results, moduleFilter, rarityFilter],
+      moduleFilter === "all"
+        ? results
+        : results.filter((e) => e.moduleId === moduleFilter),
+    [results, moduleFilter],
   );
 
   return (
     <div className="space-y-6">
       <header>
-        <p className="section-label">Machina · codex</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-ink sm:text-3xl">
-          The Codex{" "}
-          <span className="bg-gradient-to-r from-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-            of the machine
-          </span>
-        </h1>
+        <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Glossary &amp; concept map</h1>
         <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-          Every term you meet on your journey becomes a collectible card.
-          {mounted ? ` ${counts.seen}/${counts.total} discovered.` : ""} Search
-          forgives typos — try “semfore”.
+          Every term in the course, in plain language and in precise technical
+          form. Search forgives typos — try “semfore” or “page tabel”.
         </p>
-        {/* rarity tally */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {(["common", "rare", "epic", "legendary"] as Rarity[]).map((r) => (
-            <span key={r} className={`chip ${RARITY_META[r].frame} ${RARITY_META[r].text}`}>
-              {RARITY_META[r].label} {mounted ? `${counts.byRarity[r].seen}/${counts.byRarity[r].total}` : ""}
-            </span>
-          ))}
-        </div>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="search"
-          className="w-full max-w-xs rounded-lg border border-line bg-panel px-3 py-2 text-sm"
-          placeholder="Search discovered cards…"
+          className="w-full max-w-sm rounded-lg border border-line bg-panel px-3 py-2 text-sm"
+          placeholder="Search terms…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search the codex"
+          aria-label="Search the glossary"
         />
         <select
           className="rounded-lg border border-line bg-panel px-2 py-2 text-sm"
           value={moduleFilter}
           onChange={(e) => setModuleFilter(e.target.value)}
-          aria-label="Filter by zone"
+          aria-label="Filter by module"
         >
-          <option value="all">All zones</option>
+          <option value="all">All modules</option>
           {Object.values(MODULE_MAP).map((m) => (
             <option key={m.id} value={m.id}>
               {m.num}. {m.title}
             </option>
           ))}
         </select>
-        <select
-          className="rounded-lg border border-line bg-panel px-2 py-2 text-sm"
-          value={rarityFilter}
-          onChange={(e) => setRarityFilter(e.target.value as Rarity | "all")}
-          aria-label="Filter by rarity"
-        >
-          <option value="all">All rarities</option>
-          {(["common", "rare", "epic", "legendary"] as Rarity[]).map((r) => (
-            <option key={r} value={r}>
-              {RARITY_META[r].label}
-            </option>
-          ))}
-        </select>
         <button type="button" className="btn text-sm" onClick={() => setShowGraph((v) => !v)}>
-          {showGraph ? "Hide concept map" : "Concept map"}
+          {showGraph ? "Hide concept map" : "Show concept map"}
         </button>
       </div>
 
       {showGraph ? <ConceptGraph onOpen={setOpenId} /> : null}
 
       {openId ? (
-        <EntryDetail entry={glossaryById(openId)} onClose={() => setOpenId(null)} onOpen={(id) => setOpenId(id)} />
+        <EntryCard
+          entry={glossaryById(openId)}
+          onClose={() => setOpenId(null)}
+          onOpen={(id) => setOpenId(id)}
+          highlight
+        />
       ) : null}
 
-      <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-        {filtered.map((e) => {
-          const discovered = mounted && seen.has(e.id);
-          const rarity = rarityOf(e.id);
-          const meta = RARITY_META[rarity];
-          return (
-            <li key={e.id}>
-              <motion.button
-                type="button"
-                layout
-                whileHover={{ y: -3 }}
-                className={`card panel-pad h-full w-full text-left ${meta.frame} ${
-                  discovered ? "" : "opacity-60"
-                }`}
-                style={discovered ? { boxShadow: meta.glow } : undefined}
-                onClick={() => setOpenId(e.id)}
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className={`font-mono text-[9px] uppercase tracking-widest ${meta.text}`}>
-                    {meta.label}
-                  </span>
-                  <span className="chip px-1.5 py-0 text-[9px]">
-                    {MODULE_MAP[e.moduleId] ? `M${MODULE_MAP[e.moduleId].num}` : ""}
-                  </span>
-                </div>
-                <h2 className="mt-1.5 text-sm font-bold text-ink">
-                  {discovered ? e.term : "???"}
-                  {discovered && e.fullForm ? (
-                    <span className="ml-1 text-[10px] font-normal text-ink-faint">({e.fullForm})</span>
-                  ) : null}
-                </h2>
-                <p className="mt-1 text-xs leading-snug text-ink-muted">
-                  {discovered ? e.simple : "Undiscovered — meet this term in a quest or clear its zone."}
-                </p>
-              </motion.button>
-            </li>
-          );
-        })}
+      <ul className="grid gap-2.5 md:grid-cols-2">
+        {filtered.map((e) => (
+          <li key={e.id}>
+            <EntryInline entry={e} onOpen={() => setOpenId(e.id)} />
+          </li>
+        ))}
       </ul>
       {filtered.length === 0 ? (
         <p className="card panel-pad text-sm text-ink-muted">
-          No cards matched “{query}”. Try a shorter or differently spelled query.
+          No terms matched “{query}”. Try a shorter or differently spelled query.
         </p>
       ) : null}
     </div>
   );
 }
 
-function EntryDetail({
+function EntryInline({ entry, onOpen }: { entry: GlossaryEntry; onOpen: () => void }) {
+  const mod = MODULE_MAP[entry.moduleId];
+  return (
+    <button
+      type="button"
+      className="card panel-pad w-full text-left transition-colors hover:border-accent/50"
+      onClick={onOpen}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold text-ink">
+          {entry.term}
+          {entry.fullForm ? <span className="ml-1.5 text-xs font-normal text-ink-faint">({entry.fullForm})</span> : null}
+        </h2>
+        <span className="chip shrink-0 text-xs">{mod ? `M${mod.num}` : entry.moduleId}</span>
+      </div>
+      <p className="mt-1 text-sm text-ink-muted">{entry.simple}</p>
+    </button>
+  );
+}
+
+function EntryCard({
   entry,
   onClose,
   onOpen,
+  highlight,
 }: {
   entry: GlossaryEntry | undefined;
   onClose: () => void;
   onOpen: (id: string) => void;
+  highlight?: boolean;
 }) {
   if (!entry) return null;
   const mod = MODULE_MAP[entry.moduleId];
-  const rarity = rarityOf(entry.id);
-  const meta = RARITY_META[rarity];
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 14, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className={`card panel-pad border-2 ${meta.frame}`}
-      style={{ boxShadow: meta.glow }}
-      aria-label={`Codex entry: ${entry.term}`}
+    <section
+      className={`card panel-pad ${highlight ? "border-accent/50" : ""}`}
+      aria-label={`Glossary entry: ${entry.term}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <span className={`font-mono text-[9px] uppercase tracking-[0.25em] ${meta.text}`}>
-            {meta.label} card
-          </span>
-          <h2 className="text-xl font-black text-ink">
-            {entry.term}
-            {entry.fullForm ? (
-              <span className="ml-2 text-sm font-normal text-ink-faint">({entry.fullForm})</span>
-            ) : null}
-          </h2>
-        </div>
+        <h2 className="text-lg font-semibold text-ink">
+          {entry.term}
+          {entry.fullForm ? (
+            <span className="ml-2 text-sm font-normal text-ink-faint">({entry.fullForm})</span>
+          ) : null}
+        </h2>
         <button type="button" className="btn btn-ghost px-2" onClick={onClose} aria-label="Close entry">
           ✕
         </button>
@@ -255,8 +203,11 @@ function EntryDetail({
         ) : null}
         {entry.lessonRef ? (
           <Link href={`/lesson/${entry.lessonRef}`} className="chip hover:border-accent/50">
-            Quest: {entry.lessonRef.split("/")[1]?.replace(/-/g, " ")}
+            Lesson: {entry.lessonRef.split("/")[1]?.replace(/-/g, " ")}
           </Link>
+        ) : null}
+        {entry.simId ? (
+          <span className="chip">Simulation: {entry.simId}</span>
         ) : null}
         {entry.refUrl ? (
           <a href={entry.refUrl} target="_blank" rel="noreferrer" className="chip hover:border-accent/50">
@@ -280,11 +231,11 @@ function EntryDetail({
           </span>
         ) : null}
       </div>
-    </motion.section>
+    </section>
   );
 }
 
-/** Deterministic radial concept graph in SVG (kept from the glossary). */
+/** Deterministic radial concept graph in SVG. */
 function ConceptGraph({ onOpen }: { onOpen: (id: string) => void }) {
   const width = 760;
   const height = 560;
@@ -292,6 +243,7 @@ function ConceptGraph({ onOpen }: { onOpen: (id: string) => void }) {
   const cy = height / 2;
   const positions = new Map<string, { x: number; y: number }>();
   CONCEPT_NODES.forEach((n, i) => {
+    // group nodes by module around concentric rings
     const ring = i < 6 ? 0 : i < 16 ? 1 : 2;
     const countInRing = i < 6 ? 6 : i < 16 ? 10 : CONCEPT_NODES.length - 16;
     const idxInRing = i < 6 ? i : i < 16 ? i - 6 : i - 16;
@@ -303,7 +255,7 @@ function ConceptGraph({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <figure className="card overflow-hidden p-3">
       <figcaption className="mb-1 text-xs text-ink-muted">
-        How the concepts connect — click any node to open its codex card.
+        How the concepts connect — click any node to open its glossary entry.
       </figcaption>
       <div className="thin-scroll overflow-x-auto">
         <svg
@@ -317,7 +269,17 @@ function ConceptGraph({ onOpen }: { onOpen: (id: string) => void }) {
             const a = positions.get(e.from);
             const b = positions.get(e.to);
             if (!a || !b) return null;
-            return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="var(--line)" strokeWidth={1.4} />;
+            return (
+              <line
+                key={i}
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
+                stroke="var(--line)"
+                strokeWidth={1.4}
+              />
+            );
           })}
           {CONCEPT_NODES.map((n) => {
             const p = positions.get(n.id)!;
@@ -334,8 +296,14 @@ function ConceptGraph({ onOpen }: { onOpen: (id: string) => void }) {
                   if ((ev.key === "Enter" || ev.key === " ") && entry) onOpen(entry.id);
                 }}
               >
-                <circle r={34} fill="var(--panel-soft)" stroke="var(--accent)" strokeOpacity={0.35} />
-                <text textAnchor="middle" dy="0.35em" fontSize={10.5} fill="var(--ink)" style={{ pointerEvents: "none" }}>
+                <circle r={34} fill="var(--panel-soft)" stroke="rgb(var(--accent))" strokeOpacity={0.35} />
+                <text
+                  textAnchor="middle"
+                  dy="0.35em"
+                  fontSize={10.5}
+                  fill="var(--ink)"
+                  style={{ pointerEvents: "none" }}
+                >
                   {n.label.length > 14 ? n.label.slice(0, 13) + "…" : n.label}
                 </text>
               </g>

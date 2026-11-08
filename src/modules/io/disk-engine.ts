@@ -68,14 +68,11 @@ export function scheduleDisk(
           for (const r of down) walk(r);
         }
       } else {
-        for (const r of [...down].sort((a, b) => b - a).reverse().map((x) => x)) {
-          // descending
-        }
         const downDesc = requests.filter((r) => r <= head).sort((a, b) => b - a);
         const upAsc = requests.filter((r) => r > head).sort((a, b) => a - b);
         for (const r of downDesc) walk(r);
         if (upAsc.length > 0) {
-          walk(0);
+          walk(0); // reach the end before reversing (SCAN discipline)
           for (const r of upAsc) walk(r);
         }
       }
@@ -110,9 +107,10 @@ export function scheduleDisk(
         for (const r of up) walk(r);
         for (const r of down) walk(r);
       } else {
-        for (const r of [...down]) walk(r);
-        for (const r of [...up].sort((a, b) => a - b).reverse()) walk(r);
-        // note: for direction=down, closest-first descending handled above
+        // Sweep downward to the lowest request, then reverse upward and
+        // service the rest in ASCENDING order (LOOK never zig-zags).
+        for (const r of down) walk(r);
+        for (const r of up) walk(r);
       }
       break;
     }

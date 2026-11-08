@@ -44,6 +44,18 @@ export interface SimulationEngine<S, A extends string = string> {
   step(state: S, action: SimAction<A>): S;
   /** One-sentence explanation of what the current state shows. */
   explain(state: S): string;
+  /**
+   * Optional demo script for click-driven labs: Play walks through these
+   * actions one per tick so the learner watches a full example, then takes
+   * over by clicking. Absent on tick-driven labs.
+   */
+  script?: SimAction<A>[];
+  /**
+   * Optional end-of-scenario hint. When it returns true the shell shows a
+   * "scenario finished" banner and playback pauses. Open-ended labs may omit
+   * it, but declaring it makes Reset/Keep-going explicit.
+   */
+  done?: (state: S) => boolean;
 }
 
 /** Snapshot of state + the event/action that produced it (for step-back). */
@@ -225,6 +237,8 @@ export type MotionPreference = "system" | "reduced" | "full";
 export interface SettingsState {
   theme: ThemePreference;
   motion: MotionPreference;
+  /** Quiet 3D contour backdrop behind every page (off on low-end devices). */
+  ambient: boolean;
 }
 
 // ---------------------------------------------------------------------------

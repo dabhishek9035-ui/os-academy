@@ -41,7 +41,7 @@ export const SIM_REGISTRY: Record<string, ComponentType> = {
   "memory-allocation-lab": dynamic(() => import("./MemoryAllocationLab").then((m) => m.MemoryAllocationLab), {
     loading: () => <SimPlaceholder label="Loading the memory lab…" />,
   }),
-  "address-translation-lab": dynamic(() => import("./MemoryAllocationLab").then((m) => m.MemoryAllocationLab), {
+  "address-translation-lab": dynamic(() => import("./MemoryAllocationLab").then((m) => m.AddressTranslationLab), {
     loading: () => <SimPlaceholder label="Loading the translation lab…" />,
   }),
   "paging-lab": dynamic(() => import("./PagingLab").then((m) => m.PagingLab), {
@@ -56,7 +56,19 @@ export const SIM_REGISTRY: Record<string, ComponentType> = {
   "bankers-lab": dynamic(() => import("./BankersLab").then((m) => m.BankersLab), {
     loading: () => <SimPlaceholder label="Loading the Banker's lab…" />,
   }),
-  "producer-consumer-lab": dynamic(() => import("./ConcurrencyLabs").then((m) => m.BoundedBufferLab), {
+  "producer-consumer-lab": dynamic(() =>
+    import("./ConcurrencyLabs").then((m) => {
+      // Same semaphore mechanism as the bounded-buffer lab, framed as the
+      // classic producer–consumer problem (its own intro and guidance).
+      const ProducerConsumerVariant = () => (
+        <m.BoundedBufferLab
+          title="Producer–Consumer Lab"
+          description="Semaphores in action: producers append items, consumers remove them, and the counters (empty/full/mutex) gate every move."
+        />
+      );
+      ProducerConsumerVariant.displayName = "ProducerConsumerLab";
+      return ProducerConsumerVariant;
+    }), {
     loading: () => <SimPlaceholder label="Loading the producer-consumer lab…" />,
   }),
   "readers-writers-lab": dynamic(() => import("./SyncLabs").then((m) => m.ReadersWritersLab), {

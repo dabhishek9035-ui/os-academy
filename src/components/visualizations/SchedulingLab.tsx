@@ -1,9 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { SimShell } from "./SimShell";
+import { QueueLane } from "./kit";
 import {
   ALGORITHM_LABELS,
   PRESETS,
+  computeSchedule,
   schedulingEngine,
   type SchedulingAction,
   type SchedulingAlgorithm,
@@ -17,7 +20,6 @@ export function SchedulingLab() {
   return (
     <SimShell
       engine={schedulingEngine}
-      missionSimId="scheduling-lab"
       title="CPU Scheduling Lab"
       description="Edit the jobs, pick an algorithm, and step through every scheduling decision."
       toolbar={(sim) => (
@@ -25,7 +27,7 @@ export function SchedulingLab() {
           <label className="flex items-center gap-1.5 text-xs text-ink-muted">
             Algorithm
             <select
-              className="rounded-md border border-line bg-panel px-2 py-1 text-xs text-ink"
+              className="max-w-[13rem] rounded-md border border-line bg-panel px-2 py-1 text-xs text-ink"
               value={sim.state.algorithm}
               onChange={(e) =>
                 sim.dispatch({
@@ -94,6 +96,54 @@ function SchedulingViz({
   state: SchedulingState;
   dispatch: Dispatch;
 }) {
+  // Derived from the REVEALED timeline only, so the queue and metrics stay
+  // honest while the walk is still in progress.
+  const { waitingItems, liveMetrics, now } = useMemo(() => {
+    const revealed = state.result.timeline.slice(0, state.cursor);
+    const t = revealed.length > 0 ? revealed[revealed.length - 1].end : 0;
+    const served = new Map<string, number>();
+    const firstStart = new Map<string, number>();
+    const completion = new Map<string, number>();
+    for (const s of revealed) {
+      if (s.pid === null) continue;
+      served.set(s.pid, (served.get(s.pid) ?? 0) + (s.end - s.start));
+      if (!firstStart.has(s.pid)) firstStart.set(s.pid, s.start);
+      completion.set(s.pid, s.end);
+    }
+    const waiting = state.inputs
+      .filter(
+        (p) =>
+          p.arrival <= t &&
+          (served.get(p.pid) ?? 0) < p.burst &&
+          firstStart.get(p.pid) !== t, // the one running "now" isn't waiting
+      )
+      .sort(
+        (a, b) =>
+          a.arrival - b.arrival || a.pid.localeCompare(b.pid, undefined, { numeric: true }),
+      );
+    return {
+      now: t,
+      waitingItems: waiting.map((p) => ({
+        id: p.pid,
+        label: p.pid,
+        detail: `${p.burst - (served.get(p.pid) ?? 0)}u left`,
+      })),
+      liveMetrics: state.inputs.map((p) => {
+        const done = (served.get(p.pid) ?? 0) >= p.burst;
+        const comp = done ? (completion.get(p.pid) ?? 0) : null;
+        return {
+          pid: p.pid,
+          served: served.get(p.pid) ?? 0,
+          complete: done,
+          completion: comp,
+          turnaround: comp !== null ? comp - p.arrival : null,
+          waiting: comp !== null ? comp - p.arrival - p.burst : null,
+          response: firstStart.has(p.pid) ? (firstStart.get(p.pid) as number) - p.arrival : null,
+        };
+      }),
+    };
+  }, [state.result.timeline, state.cursor, state.inputs]);
+
   return (
     <div className="space-y-4">
       <PresetsRow dispatch={dispatch} />
@@ -102,10 +152,66 @@ function SchedulingViz({
         cursor={state.cursor}
         error={state.error}
       />
+      <QueueLane
+        items={waitingItems}
+        headLabel="longest waiting"
+        tailLabel="newest arrival"
+        emptyLabel="nothing waiting"
+        caption={`Waiting at t=${now}: arrived, not finished (ordered by arrival — the queue ORDER under RR/preemption differs; the Gantt shows the real decision).`}
+      />
+      <AlgorithmComparison state={state} />
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <ProcessEditor state={state} dispatch={dispatch} />
-        <MetricsPanel state={state} />
+        <MetricsPanel liveMetrics={liveMetrics} now={now} revealed={state.cursor > 0} />
       </div>
+    </div>
+  );
+}
+
+function AlgorithmComparison({ state }: { state: SchedulingState }) {
+  const rows = useMemo(() => {
+    const algs = Object.keys(ALGORITHM_LABELS) as SchedulingAlgorithm[];
+    return algs.map((a) => ({
+      alg: a,
+      averages: computeSchedule(
+        state.inputs,
+        a,
+        state.quantum,
+        a === "priority" ? state.priorityMode : "non-preemptive",
+      ).averages,
+    }));
+  }, [state.inputs, state.quantum, state.priorityMode]);
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-line">
+      <h4 className="bg-panel-soft px-3 py-2 text-xs text-ink-muted">
+        Same jobs, all algorithms (full run) — where your pick lands
+      </h4>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-left text-ink-faint">
+            <th scope="col" className="px-3 py-1.5 font-medium">Algorithm</th>
+            <th scope="col" className="px-3 py-1.5 font-medium">avg wait</th>
+            <th scope="col" className="px-3 py-1.5 font-medium">avg turnaround</th>
+            <th scope="col" className="px-3 py-1.5 font-medium">avg response</th>
+          </tr>
+        </thead>
+        <tbody className="font-mono">
+          {rows.map((r) => (
+            <tr
+              key={r.alg}
+              className={`border-t border-line/60 ${
+                r.alg === state.algorithm ? "bg-accent-soft font-semibold text-ink" : "text-ink-muted"
+              }`}
+            >
+              <td className="px-3 py-1.5">{ALGORITHM_LABELS[r.alg]}</td>
+              <td className="px-3 py-1.5">{r.averages.waiting.toFixed(2)}</td>
+              <td className="px-3 py-1.5">{r.averages.turnaround.toFixed(2)}</td>
+              <td className="px-3 py-1.5">{r.averages.response.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -179,7 +285,7 @@ function GanttChart({
                 strokeWidth={1}
               />
               {makespan <= 40 || t % 2 === 0 ? (
-                <text x={t * TIME_UNIT + 29} y={height - 5} fontSize={10} fill="var(--ink-faint)">
+                <text x={t * TIME_UNIT + 29} y={height - 5} fontSize={12} fill="var(--ink-faint)">
                   {t}
                 </text>
               ) : null}
@@ -187,7 +293,7 @@ function GanttChart({
           ))}
           {pids.map((pid, row) => (
             <g key={pid} transform={`translate(0 ${row * rowH})`}>
-              <text x={2} y={rowH - 8} fontSize={11} fill="var(--ink-muted)" fontFamily="monospace">
+              <text x={2} y={rowH - 8} fontSize={12} fill="var(--ink-muted)" fontFamily="monospace">
                 {pid}
               </text>
               {timeline.slice(0, cursor).map((s, i) =>
@@ -241,10 +347,11 @@ function ProcessEditor({
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-line">
-      <table className="w-full text-sm">
-        <caption className="bg-panel-soft px-3 py-2 text-left text-xs text-ink-muted">
-          Processes — edit and watch the schedule rebuild instantly.
-        </caption>
+      <div className="thin-scroll overflow-x-auto">
+        <table className="w-full text-sm">
+          <caption className="bg-panel-soft px-3 py-2 text-left text-xs text-ink-muted">
+            Processes — edit and watch the schedule rebuild instantly.
+          </caption>
         <thead>
           <tr className="text-left text-xs text-ink-faint">
             <th scope="col" className="px-2 py-1.5 font-medium">Process</th>
@@ -309,7 +416,8 @@ function ProcessEditor({
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
       <div className="border-t border-line px-3 py-2">
         <button
           type="button"
@@ -324,13 +432,33 @@ function ProcessEditor({
   );
 }
 
-function MetricsPanel({ state }: { state: SchedulingState }) {
-  const { metrics, averages } = state.result;
-  const revealed = state.cursor > 0 || averages.makespan > 0;
+function MetricsPanel({
+  liveMetrics,
+  now,
+  revealed,
+}: {
+  liveMetrics: {
+    pid: string;
+    served: number;
+    complete: boolean;
+    completion: number | null;
+    turnaround: number | null;
+    waiting: number | null;
+    response: number | null;
+  }[];
+  now: number;
+  revealed: boolean;
+}) {
+  const finished = liveMetrics.filter((m) => m.complete);
+  const avg = (sel: (m: (typeof liveMetrics)[number]) => number | null) =>
+    finished.length === 0
+      ? null
+      : finished.reduce((a, m) => a + (sel(m) ?? 0), 0) / finished.length;
+
   return (
     <div className="rounded-lg border border-line">
       <h4 className="bg-panel-soft px-3 py-2 text-xs text-ink-muted">
-        Metrics (full run)
+        Metrics — revealed so far (t={now})
       </h4>
       {revealed ? (
         <div className="thin-scroll max-h-72 overflow-auto px-3 py-2">
@@ -345,41 +473,34 @@ function MetricsPanel({ state }: { state: SchedulingState }) {
               </tr>
             </thead>
             <tbody className="font-mono">
-              {metrics.map((m) => (
+              {liveMetrics.map((m) => (
                 <tr key={m.pid} className="border-t border-line/60">
                   <td className="py-1">{m.pid}</td>
-                  <td className="py-1">{m.completion}</td>
-                  <td className="py-1">{m.turnaround}</td>
-                  <td className="py-1">{m.waiting}</td>
-                  <td className="py-1">{m.response}</td>
+                  <td className="py-1">
+                    {m.complete ? (
+                      m.completion
+                    ) : (
+                      <span className="text-ink-faint">ran {m.served}u</span>
+                    )}
+                  </td>
+                  <td className="py-1">{m.turnaround ?? "–"}</td>
+                  <td className="py-1">{m.waiting ?? "–"}</td>
+                  <td className="py-1">{m.response ?? "–"}</td>
                 </tr>
               ))}
               <tr className="border-t border-line font-semibold">
-                <td className="py-1">avg</td>
+                <td className="py-1">avg*</td>
                 <td />
-                <td className="py-1">{averages.turnaround.toFixed(2)}</td>
-                <td className="py-1">{averages.waiting.toFixed(2)}</td>
-                <td className="py-1">{averages.response.toFixed(2)}</td>
+                <td className="py-1">{avg((m) => m.turnaround)?.toFixed(2) ?? "–"}</td>
+                <td className="py-1">{avg((m) => m.waiting)?.toFixed(2) ?? "–"}</td>
+                <td className="py-1">{avg((m) => m.response)?.toFixed(2) ?? "–"}</td>
               </tr>
             </tbody>
           </table>
-          <dl className="mt-3 space-y-1 text-xs text-ink-muted">
-            <div className="flex justify-between">
-              <dt>CPU utilization</dt>
-              <dd className="font-mono">{Math.round(averages.cpuUtilization * 100)}%</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt>Throughput</dt>
-              <dd className="font-mono">{averages.throughput.toFixed(3)} proc/unit</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt>Context switches</dt>
-              <dd className="font-mono">{averages.contextSwitches}</dd>
-            </div>
-          </dl>
-          <p className="mt-3 text-[11px] leading-relaxed text-ink-faint">
-            TAT = completion − arrival · Wait = TAT − burst · Resp = first start
-            − arrival
+          <p className="mt-2 text-xs text-ink-faint">
+            *averages over finished processes only. TAT = completion − arrival ·
+            Wait = TAT − burst · Resp = first start − arrival. Full-run numbers
+            are in the comparison table.
           </p>
         </div>
       ) : (

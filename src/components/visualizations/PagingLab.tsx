@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SimShell } from "./SimShell";
+import { AddressBits } from "./kit";
 import {
   vmEngine,
   type VmAction,
@@ -14,7 +15,6 @@ export function PagingLab() {
   return (
     <SimShell
       engine={vmEngine}
-      missionSimId="paging-lab"
       title="Paging & TLB Lab"
       description="Walk a reference string through TLB, page table and frames — faults, evictions and all."
       toolbar={(sim) => (
@@ -68,6 +68,24 @@ function PagingViz({ state, dispatch }: { state: VmState; dispatch: Dispatch }) 
         </p>
       ) : null}
 
+      {state.currentStep ? (
+        <AddressBits
+          value={state.currentStep.address}
+          totalBits={8}
+          fields={[
+            { label: "virtual page #", bits: 4, value: state.currentStep.vpage },
+            { label: "offset", bits: 4, value: state.currentStep.offset },
+          ]}
+          caption={`Last access: address ${state.currentStep.address} = page ${state.currentStep.vpage} × 16 + offset ${state.currentStep.offset} → ${
+            state.currentStep.tlbHit
+              ? "TLB hit"
+              : state.currentStep.fault
+                ? "TLB miss → page table → PAGE FAULT"
+                : "TLB miss → page table hit"
+          }`}
+        />
+      ) : null}
+
       {/* reference string with cursor */}
       <div className="rounded-lg border border-line bg-bg-soft p-3">
         <span className="section-label">Reference string (page = address ÷ 16)</span>
@@ -75,7 +93,7 @@ function PagingViz({ state, dispatch }: { state: VmState; dispatch: Dispatch }) 
           {state.referenceString.map((a, i) => (
             <span
               key={i}
-              className={`rounded-md border px-2 py-1 font-mono text-[11px] ${
+              className={`rounded-md border px-2 py-1 font-mono text-xs ${
                 i < state.cursor
                   ? "border-line bg-panel text-ink-faint"
                   : i === state.cursor
@@ -156,7 +174,7 @@ function PagingViz({ state, dispatch }: { state: VmState; dispatch: Dispatch }) 
                 .map((p) => (
                   <li
                     key={p.vpage}
-                    className={`rounded-md border px-2 py-1 font-mono text-[11px] ${
+                    className={`rounded-md border px-2 py-1 font-mono text-xs ${
                       p.shared ? "border-warn/60 text-warn" : "border-line text-ink-muted"
                     }`}
                     title={p.shared ? "shared + read-only (COW)" : undefined}
@@ -220,7 +238,7 @@ function Totals({ state }: { state: VmState }) {
           ))}
         </tbody>
       </table>
-      <p className="mt-2 text-[11px] text-ink-faint">
+      <p className="mt-2 text-xs text-ink-faint">
         Live walk ({state.algorithm.toUpperCase()}): {state.faultCount} faults ·{" "}
         {state.tlbHits} TLB hits · {state.cursor}/{state.referenceString.length} refs.
       </p>

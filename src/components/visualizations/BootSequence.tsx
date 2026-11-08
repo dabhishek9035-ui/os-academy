@@ -34,9 +34,9 @@ export function BootSequence() {
                     {i + 1}. {s.name}
                   </h3>
                   {isCurrent ? (
-                    <span className="chip text-[10px]">running now</span>
+                    <span className="chip text-xs">running now</span>
                   ) : isPast ? (
-                    <span className="chip text-[10px] text-ok">done</span>
+                    <span className="chip text-xs text-ok">done</span>
                   ) : null}
                 </div>
                 <p className="mt-1 text-xs text-ink-muted">{s.what}</p>
@@ -73,7 +73,7 @@ export function BootSequence() {
                     </ul>
                   </div>
                 </div>
-                <p className="mt-2 text-[11px] text-accent">Hands control to: {s.handsTo}</p>
+                <p className="mt-2 text-xs text-accent">Hands control to: {s.handsTo}</p>
               </li>
             );
           })}

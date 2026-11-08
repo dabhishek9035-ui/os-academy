@@ -4,18 +4,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { SIM_TITLES } from "@/data/curriculum/config";
 import { getSimComponent, SimPlaceholder } from "@/components/visualizations/registry";
-import { useGameStore } from "@/lib/game/player";
-import { useEffect } from "react";
 
 export default function SimLabPage() {
   const params = useParams<{ simId: string }>();
   const simId = params?.simId ?? "";
   const Sim = getSimComponent(simId);
   const title = SIM_TITLES[simId];
-  const visitLab = useGameStore((s) => s.visitLab);
-  useEffect(() => {
-    if (simId && SIM_TITLES[simId]) visitLab(simId);
-  }, [simId, visitLab]);
 
   if (!title) {
     return (
@@ -40,7 +34,7 @@ export default function SimLabPage() {
         </Link>{" "}
         / <span className="text-ink-muted">{title}</span>
       </nav>
-      <h1 className="text-xl font-bold text-ink">{title}</h1>
+      <h1 className="text-xl font-semibold text-ink">{title}</h1>
       {Sim ? (
         <Sim />
       ) : (

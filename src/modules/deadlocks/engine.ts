@@ -117,6 +117,18 @@ export const ragEngine: SimulationEngine<RagState, RagAction> = {
   id: "rag",
   initialState: initialRagState,
 
+  // Demo: detect the cycle in the loaded scenario, then see how denying one
+  // pending request dissolves the deadlock.
+  script: [
+    { type: "detect" },
+    { type: "deny", payload: "P2" },
+    { type: "detect" },
+  ],
+
+  done(state) {
+    return state.analysis !== null && state.analysis.deadlocked.length === 0;
+  },
+
   step(state, action: SimAction<RagAction>) {
     switch (action.type) {
       case "add-process": {
@@ -296,6 +308,18 @@ export function safetySequence(
 
 export const bankersEngine: SimulationEngine<BankersState, BankersAction> = {
   id: "bankers",
+  // Demo: confirm the loaded state is safe, then grant P2's classic request
+  // for (1,0,2) and re-check the resulting state.
+  script: [
+    { type: "safety-check" },
+    { type: "request", payload: { pid: "P2", vector: [1, 0, 2] } },
+    { type: "safety-check" },
+  ],
+
+  done(state) {
+    return state.lastRequest !== null && state.lastRequest.granted;
+  },
+
   initialState() {
     return {
       ...TEXTBOOK_STATE,

@@ -110,7 +110,7 @@ function Diagram({
                 stroke={state.viaOs ? "rgb(var(--accent))" : "var(--line)"}
                 strokeDasharray={state.viaOs ? undefined : "4 3"}
               />
-              <text x={400} y={79} textAnchor="middle" fontSize={11} fill={state.viaOs ? "rgb(var(--accent))" : "var(--ink-faint)"}>
+              <text x={400} y={79} textAnchor="middle" fontSize={12} fill={state.viaOs ? "rgb(var(--accent))" : "var(--ink-faint)"}>
                 OS (kernel) {state.viaOs ? "arbitrating" : "bypassed"}
               </text>
             </g>
@@ -158,7 +158,7 @@ function Diagram({
                   <>
                     <h3 className="text-sm font-semibold text-ink">{info.label}</h3>
                     <p className="mt-1 text-xs text-ink-muted">{info.role}</p>
-                    <p className="mt-1.5 font-mono text-[11px] text-accent">{info.speedLabel}</p>
+                    <p className="mt-1.5 font-mono text-xs text-accent">{info.speedLabel}</p>
                   </>
                 );
               })()}

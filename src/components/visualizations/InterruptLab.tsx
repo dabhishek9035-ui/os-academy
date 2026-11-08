@@ -14,7 +14,6 @@ export function InterruptLab() {
   return (
     <SimShell
       engine={interruptsEngine}
-      missionSimId="interrupt-lab"
       title="Interrupt Lab"
       description="Raise interrupts while a program runs; watch the CPU save state, handle, and resume."
       toolbar={(sim) => (
@@ -97,7 +96,7 @@ function InterruptViz({
             {state.program.map((instr, i) => (
               <li
                 key={i}
-                className={`rounded-md border px-2 py-1 font-mono text-[11px] ${
+                className={`rounded-md border px-2 py-1 font-mono text-xs ${
                   i === state.pc && !state.programFinished
                     ? "border-accent bg-accent-soft text-ink"
                     : i < state.pc
@@ -121,7 +120,7 @@ function InterruptViz({
               return (
                 <li
                   key={stage}
-                  className={`rounded-md border px-2 py-1 text-[11px] font-mono ${
+                  className={`rounded-md border px-2 py-1 text-xs font-mono ${
                     active
                       ? "border-accent bg-accent-soft text-ink"
                       : done
@@ -178,7 +177,7 @@ function InterruptViz({
                 {src}: {state.enabled[src] ? "enabled" : "masked"}
               </button>
             ))}
-            <span className="chip text-[10px]" title="Exceptions are synchronous and cannot be masked">
+            <span className="chip text-xs" title="Exceptions are synchronous and cannot be masked">
               exception: always on
             </span>
           </div>
@@ -199,7 +198,7 @@ function InterruptViz({
           ) : (
             <ul className="mt-1.5 space-y-1">
               {state.savedContexts.map((ctx, i) => (
-                <li key={i} className="rounded-md border border-accent/40 bg-accent-soft px-2 py-1 font-mono text-[11px] text-ink">
+                <li key={i} className="rounded-md border border-accent/40 bg-accent-soft px-2 py-1 font-mono text-xs text-ink">
                   saved: pc={ctx.pc} · progress={ctx.progressInInstruction} · {ctx.mode} mode
                 </li>
               ))}
@@ -212,15 +211,15 @@ function InterruptViz({
           <span className="section-label">Statistics</span>
           <dl className="mt-1.5 grid grid-cols-3 gap-2 text-center">
             <div>
-              <dt className="text-[10px] uppercase text-ink-faint">Handled</dt>
+              <dt className="text-xs uppercase text-ink-faint">Handled</dt>
               <dd className="font-mono text-sm text-ink">{state.stats.interruptsHandled}</dd>
             </div>
             <div>
-              <dt className="text-[10px] uppercase text-ink-faint">Total latency</dt>
+              <dt className="text-xs uppercase text-ink-faint">Total latency</dt>
               <dd className="font-mono text-sm text-ink">{state.stats.totalLatency}</dd>
             </div>
             <div>
-              <dt className="text-[10px] uppercase text-ink-faint">Poll ticks wasted</dt>
+              <dt className="text-xs uppercase text-ink-faint">Poll ticks wasted</dt>
               <dd className={`font-mono text-sm ${state.stats.wastedPollTicks > 0 ? "text-warn" : "text-ink"}`}>
                 {state.stats.wastedPollTicks}
               </dd>

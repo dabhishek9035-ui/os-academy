@@ -1,18 +1,39 @@
 "use client";
 
+import { useState } from "react";
 import { useSimulation } from "@/lib/simulation/useSimulation";
-import { interruptsEngine, type InterruptState } from "@/modules/interrupts/engine";
+import {
+  interruptsEngine,
+  type InterruptState,
+} from "@/modules/interrupts/engine";
 import { LogPanel } from "./LogPanel";
+import { Legend, Timeline, type TimelineSegment } from "./kit";
 
 /**
  * Side-by-side race: the same I/O request handled by a polling CPU and an
  * interrupt-driven CPU. Both engines are identical; only the mode differs.
+ * The timelines below make the wasted poll ticks visible as amber bands.
  */
 const SLOW_DEVICE_TICKS = 20;
+
+type Activity = "program" | "polling" | "handler";
+
+const ACTIVITY_COLORS: Record<Activity, string> = {
+  program: "rgb(var(--ok))",
+  polling: "rgb(var(--warn))",
+  handler: "rgb(var(--p-violet))",
+};
+
+function classify(state: InterruptState): Activity {
+  if (state.activeInterrupt) return "handler";
+  if (state.pollingMode && state.deviceWaitTicks > 0) return "polling";
+  return "program";
+}
 
 export function PollingVsInterrupt() {
   const polling = useSimulation(interruptsEngine);
   const interrupt = useSimulation(interruptsEngine);
+  const [raced, setRaced] = useState(false);
 
   const startRace = () => {
     polling.reset();
@@ -21,11 +42,13 @@ export function PollingVsInterrupt() {
     interrupt.dispatch({ type: "set-polling", payload: false });
     polling.dispatch({ type: "raise-io", payload: { waitTicks: SLOW_DEVICE_TICKS } });
     interrupt.dispatch({ type: "raise-io" });
-    // Step both in lockstep for a fixed window.
+    // Step both in lockstep so the stats cards and logs advance too — the
+    // timelines replay the same deterministic trace for the visuals.
     for (let i = 0; i < SLOW_DEVICE_TICKS + 8; i += 1) {
       polling.dispatch({ type: "tick" });
       interrupt.dispatch({ type: "tick" });
     }
+    setRaced(true);
   };
 
   return (
@@ -49,6 +72,7 @@ export function PollingVsInterrupt() {
               onClick={() => {
                 polling.reset();
                 interrupt.reset();
+                setRaced(false);
               }}
             >
               Reset
@@ -60,6 +84,29 @@ export function PollingVsInterrupt() {
           <Side title="CPU A — polling" state={polling.state} tone="warn" />
           <Side title="CPU B — interrupt-driven" state={interrupt.state} tone="ok" />
         </div>
+
+        {raced ? (
+          <div className="space-y-3 border-t border-line p-4">
+            <RaceTimeline
+              title="CPU A — polling: every check of the busy device is a wasted tick"
+              states={raceTrace({ polling: true, waitTicks: SLOW_DEVICE_TICKS })}
+              ariaLabel="Polling CPU activity timeline"
+            />
+            <RaceTimeline
+              title="CPU B — interrupts: the program keeps running while the device works"
+              states={raceTrace({ polling: false, waitTicks: SLOW_DEVICE_TICKS })}
+              ariaLabel="Interrupt-driven CPU activity timeline"
+            />
+            <Legend
+              caption="What each band means"
+              items={[
+                { label: "running the program (useful)", color: ACTIVITY_COLORS.program },
+                { label: "busy-polling a busy device (wasted)", color: ACTIVITY_COLORS.polling },
+                { label: "interrupt handler", color: ACTIVITY_COLORS.handler },
+              ]}
+            />
+          </div>
+        ) : null}
 
         <div className="border-t border-line px-4 py-3 text-[13px]" aria-live="polite">
           {polling.state.stats.wastedPollTicks > 0 || interrupt.state.stats.interruptsHandled > 0 ? (
@@ -92,6 +139,59 @@ export function PollingVsInterrupt() {
   );
 }
 
+/** Replay the race deterministically and record each tick's activity. */
+function raceTrace(options: { polling: boolean; waitTicks: number }): Activity[] {
+  let state = interruptsEngine.initialState();
+  state = interruptsEngine.step(state, { type: "set-polling", payload: options.polling });
+  state = interruptsEngine.step(state, {
+    type: "raise-io",
+    payload: options.polling ? { waitTicks: options.waitTicks } : undefined,
+  });
+  const trace: Activity[] = [];
+  for (let i = 0; i < options.waitTicks + 8; i += 1) {
+    trace.push(classify(state));
+    const next = interruptsEngine.step(state, { type: "tick" });
+    if (next === state) break;
+    state = next;
+  }
+  return trace;
+}
+
+function RaceTimeline({
+  title,
+  states,
+  ariaLabel,
+}: {
+  title: string;
+  states: Activity[];
+  ariaLabel: string;
+}) {
+  // Compress the per-tick activity list into run-length segments.
+  const segments: TimelineSegment[] = [];
+  for (let t = 0; t < states.length; t += 1) {
+    const last = segments[segments.length - 1];
+    if (last && last.label === states[t]) {
+      last.end = t + 1;
+    } else {
+      segments.push({ pid: "CPU", start: t, end: t + 1, label: states[t] });
+    }
+  }
+
+  return (
+    <figure>
+      <figcaption className="mb-1 text-xs text-ink-muted">{title}</figcaption>
+      <Timeline
+        segments={segments}
+        lanes={["CPU"]}
+        unitWidth={30}
+        caption={ariaLabel}
+        idleNote={null}
+        segmentColor={(seg) => ACTIVITY_COLORS[(seg.label as Activity) ?? "program"]}
+      />
+    </figure>
+  );
+}
+
 function instructionsExecuted(state: InterruptState): number {
   // Count completed instruction events as a proxy for useful work done.
   return state.eventLog.filter((e) => e.kind === "instruction-complete").length;
@@ -115,17 +215,17 @@ function Side({
       <h4 className="text-sm font-semibold text-ink">{title}</h4>
       <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
         <div className="rounded-md bg-panel px-2 py-1.5">
-          <dt className="text-[10px] uppercase text-ink-faint">Wasted poll ticks</dt>
+          <dt className="text-xs uppercase text-ink-faint">Wasted poll ticks</dt>
           <dd className={`font-mono text-sm ${state.stats.wastedPollTicks > 0 ? "text-warn" : "text-ink"}`}>
             {state.stats.wastedPollTicks}
           </dd>
         </div>
         <div className="rounded-md bg-panel px-2 py-1.5">
-          <dt className="text-[10px] uppercase text-ink-faint">Handled</dt>
+          <dt className="text-xs uppercase text-ink-faint">Handled</dt>
           <dd className="font-mono text-sm text-ink">{state.stats.interruptsHandled}</dd>
         </div>
         <div className="rounded-md bg-panel px-2 py-1.5">
-          <dt className="text-[10px] uppercase text-ink-faint">Instr. ticks done</dt>
+          <dt className="text-xs uppercase text-ink-faint">Instr. ticks done</dt>
           <dd className="font-mono text-sm text-ink">{instructionsExecuted(state)}</dd>
         </div>
       </dl>

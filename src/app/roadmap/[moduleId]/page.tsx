@@ -65,7 +65,7 @@ export default function ModuleOverviewPage() {
 
       <header>
         <p className="section-label">Module {mod.num}</p>
-        <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">{mod.title}</h1>
+        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">{mod.title}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
           {mod.description}
         </p>

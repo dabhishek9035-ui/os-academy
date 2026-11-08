@@ -13,7 +13,6 @@ export function RaceConditionLab() {
   return (
     <SimShell
       engine={raceEngine}
-      missionSimId="race-condition-lab"
       title="Race Condition Stepper"
       description="Two threads, one counter — step micro-instruction by micro-instruction and watch the update get lost."
       toolbar={(sim) => (
@@ -52,13 +51,13 @@ function RaceViz({ state }: { state: RaceState }) {
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-ink">{t.id}</h3>
-              <span className="chip text-[10px]">{t.done ? "done" : `${t.iterations} to go`}</span>
+              <span className="chip text-xs">{t.done ? "done" : `${t.iterations} to go`}</span>
             </div>
             <ol className="mt-2 space-y-1">
               {MICRO_STEPS.map((step, j) => (
                 <li
                   key={step}
-                  className={`rounded px-2 py-1 font-mono text-[11px] ${
+                  className={`rounded px-2 py-1 font-mono text-xs ${
                     !t.done && t.pc === j
                       ? "bg-panel text-ink ring-1 ring-accent/50"
                       : "text-ink-faint"
@@ -69,7 +68,7 @@ function RaceViz({ state }: { state: RaceState }) {
               ))}
             </ol>
             {t.reg !== null ? (
-              <p className="mt-1.5 font-mono text-[11px] text-warn">register: {t.reg}</p>
+              <p className="mt-1.5 font-mono text-xs text-warn">register: {t.reg}</p>
             ) : null}
           </div>
         ))}
@@ -77,7 +76,7 @@ function RaceViz({ state }: { state: RaceState }) {
       <div className="space-y-2.5">
         <div className="rounded-lg border border-line bg-bg-soft p-3 text-center">
           <span className="section-label">Shared counter</span>
-          <p className="mt-1 font-mono text-4xl font-bold text-ink">{state.counter}</p>
+          <p className="mt-1 font-mono text-4xl font-semibold text-ink">{state.counter}</p>
           <p className="mt-1 text-xs text-ink-faint">
             expected {state.expectedIncrements}
             {state.expectedIncrements - state.counter > 0 ? (
@@ -97,12 +96,19 @@ function RaceViz({ state }: { state: RaceState }) {
   );
 }
 
-export function BoundedBufferLab() {
+export function BoundedBufferLab({
+  title = "Bounded Buffer Lab",
+  description = "Producers and consumers sharing a fixed buffer — with the semaphore values on display.",
+}: {
+  /** Framing overrides so the producer-consumer-lab id can reuse this lab. */
+  title?: string;
+  description?: string;
+} = {}) {
   return (
     <SimShell
       engine={boundedBufferEngine}
-      title="Bounded Buffer Lab"
-      description="Producers and consumers sharing a fixed buffer — with the semaphore values on display."
+      title={title}
+      description={description}
       toolbar={(sim) => (
         <>
           <button type="button" className="btn text-xs" onClick={() => sim.dispatch({ type: "add-producer" })}>
@@ -203,13 +209,13 @@ function SemaphorePanel({ state }: { state: BufferState }) {
           ] as const
         ).map(([name, value, hint]) => (
           <div key={name} className="rounded-md bg-panel px-1 py-1.5">
-            <dt className="text-[10px] uppercase text-ink-faint">{name}</dt>
+            <dt className="text-xs uppercase text-ink-faint">{name}</dt>
             <dd className={`font-mono text-lg ${value === 0 ? "text-warn" : "text-ink"}`}>{value}</dd>
-            <dd className="text-[9px] text-ink-faint">{hint}</dd>
+            <dd className="text-xs text-ink-faint">{hint}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-2 text-[11px] text-ink-faint">
+      <p className="mt-2 text-xs text-ink-faint">
         produced {state.produced} · consumed {state.consumed}
       </p>
     </div>

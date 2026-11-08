@@ -112,6 +112,16 @@ export const filesystemEngine: SimulationEngine<FsState, FsAction> = {
   id: "filesystem",
   initialState: initialFsState,
 
+  // Demo: create a file, read it, grow it, free the photo's blocks and reuse
+  // them for a bigger file — the whole file-lifecycle story.
+  script: [
+    { type: "create", payload: { path: "/tmp/notes.txt", sizeBlocks: 2 } },
+    { type: "read", payload: "/tmp/notes.txt" },
+    { type: "append", payload: { path: "/tmp/notes.txt", sizeBlocks: 1 } },
+    { type: "delete", payload: "/photos/a.png" },
+    { type: "create", payload: { path: "/photos/b.png", sizeBlocks: 4 } },
+  ],
+
   step(state, action: SimAction<FsAction>) {
     switch (action.type) {
       case "create": {

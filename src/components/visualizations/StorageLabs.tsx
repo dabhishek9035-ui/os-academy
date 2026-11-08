@@ -68,7 +68,7 @@ function FsViz({ state, dispatch }: { state: FsState; dispatch: FsDispatch }) {
             return (
               <div
                 key={i}
-                className={`grid aspect-square place-items-center rounded border text-[9px] font-mono ${
+                className={`grid aspect-square place-items-center rounded border text-xs font-mono ${
                   u
                     ? isIndex
                       ? "border-warn/70 bg-warn/15 text-warn"
@@ -83,7 +83,7 @@ function FsViz({ state, dispatch }: { state: FsState; dispatch: FsDispatch }) {
             );
           })}
         </div>
-        <p className="mt-1.5 text-[11px] text-ink-faint">
+        <p className="mt-1.5 text-xs text-ink-faint">
           Amber blocks are index blocks. Hover any block for its owner.
         </p>
       </div>
@@ -143,7 +143,7 @@ function InodePanel({ state, dispatch }: { state: FsState; dispatch: FsDispatch 
                   </button>
                 </span>
               </div>
-              <p className="mt-0.5 font-mono text-[10px] text-ink-faint">
+              <p className="mt-0.5 font-mono text-xs text-ink-faint">
                 inode {f.inode} · {f.sizeBlocks} blk · {f.perms} · blocks [{f.blocks.join(", ")}]
                 {f.indexBlock !== undefined ? ` +idx ${f.indexBlock}` : ""}
               </p>
@@ -152,7 +152,7 @@ function InodePanel({ state, dispatch }: { state: FsState; dispatch: FsDispatch 
         </ul>
       )}
       {state.operationTrace.length > 0 ? (
-        <p className="mt-2 font-mono text-[10px] text-accent">
+        <p className="mt-2 font-mono text-xs text-accent">
           last read traced: {state.operationTrace.join(" → ")}
         </p>
       ) : null}
@@ -170,7 +170,6 @@ export function DiskSchedulingLab() {
   return (
     <SimShell
       engine={diskEngine}
-      missionSimId="disk-scheduling-lab"
       title="Disk Scheduling Lab"
       description="Race FCFS, SSTF, SCAN, C-SCAN, LOOK and C-LOOK over the same request queue."
       toolbar={(sim) => (
@@ -210,7 +209,7 @@ function DiskViz({ state, dispatch }: { state: DiskState; dispatch: DiskDispatch
             return (
               <g key={i}>
                 <line x1={x} y1={8} x2={x} y2={height - 12} stroke="var(--line)" strokeWidth={0.6} />
-                <text x={x} y={height + 2} fontSize={8} fill="var(--ink-faint)" fontFamily="monospace" textAnchor="middle">
+                <text x={x} y={height + 2} fontSize={12} fill="var(--ink-faint)" fontFamily="monospace" textAnchor="middle">
                   {cyl}
                 </text>
               </g>
@@ -245,7 +244,7 @@ function DiskViz({ state, dispatch }: { state: DiskState; dispatch: DiskDispatch
             </circle>
           ))}
         </svg>
-        <p className="mt-1 text-[11px] text-ink-faint">
+        <p className="mt-1 text-xs text-ink-faint">
           Head starts at {state.schedule.path[0]}. Dashed lines are pending requests; the path climbs
           as each is serviced.
         </p>
@@ -306,7 +305,7 @@ function DiskMetrics({ state }: { state: DiskState }) {
         </div>
         <div className="flex justify-between">
           <dt>Service order</dt>
-          <dd className="max-w-44 text-right font-mono text-[10px]">{state.schedule.order.join(", ")}</dd>
+          <dd className="max-w-44 text-right font-mono text-xs">{state.schedule.order.join(", ")}</dd>
         </div>
         <div className="flex justify-between">
           <dt>Total movement</dt>

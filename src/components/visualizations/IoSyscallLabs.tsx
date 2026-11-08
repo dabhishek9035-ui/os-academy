@@ -85,15 +85,15 @@ function IoViz({ state }: { state: IoState }) {
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
           <div className="rounded-md bg-panel px-2 py-1.5">
-            <p className="text-[10px] uppercase text-ink-faint">ticks</p>
+            <p className="text-xs uppercase text-ink-faint">ticks</p>
             <p className="font-mono text-sm text-ink">{state.totalTicks}</p>
           </div>
           <div className="rounded-md bg-panel px-2 py-1.5">
-            <p className="text-[10px] uppercase text-ink-faint">CPU busy</p>
+            <p className="text-xs uppercase text-ink-faint">CPU busy</p>
             <p className="font-mono text-sm text-ink">{state.cpuBusyTicks}</p>
           </div>
           <div className="rounded-md bg-panel px-2 py-1.5">
-            <p className="text-[10px] uppercase text-ink-faint">CPU idle</p>
+            <p className="text-xs uppercase text-ink-faint">CPU idle</p>
             <p className="font-mono text-sm text-ok">{state.totalTicks - state.cpuBusyTicks}</p>
           </div>
         </div>
@@ -126,7 +126,7 @@ function IoMetrics({ state }: { state: IoState }) {
           ))}
         </tbody>
       </table>
-      <p className="mt-2 text-[11px] text-ink-faint">
+      <p className="mt-2 text-xs text-ink-faint">
         current run: {state.totalTicks}/{expected.totalTicks} ticks.
       </p>
     </div>
@@ -176,7 +176,7 @@ function SyscallViz({ state }: { state: SyscallState }) {
             <li
               key={stage}
               aria-current={active ? "step" : undefined}
-              className={`rounded-md border px-2.5 py-1 font-mono text-[11px] ${
+              className={`rounded-md border px-2.5 py-1 font-mono text-xs ${
                 active
                   ? "border-accent bg-accent-soft text-ink"
                   : done
@@ -256,7 +256,7 @@ function ProtectionViz({ state, dispatch }: { state: ProtectionState; dispatch: 
           <div key={f.name} className="rounded-lg border border-line bg-bg-soft px-3 py-2">
             <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
               <span className="font-mono text-ink">{f.name}</span>
-              <span className="font-mono text-[10px] text-ink-faint">
+              <span className="font-mono text-xs text-ink-faint">
                 {f.owner}:{f.group} {f.perms}
               </span>
             </div>

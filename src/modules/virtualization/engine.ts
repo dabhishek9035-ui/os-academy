@@ -154,6 +154,15 @@ export type MultiAction = "add-task" | "tick" | "run-to-end" | "reset";
 
 export const multiprocEngine: SimulationEngine<MultiState, MultiAction> = {
   id: "multiproc",
+  // The schedule ends when every added task has finished and both CPUs idle.
+  done(state) {
+    return (
+      state.tasks.length > 0 &&
+      state.tasks.every((t) => t.end !== null) &&
+      state.cpus.every((c) => c.task === null)
+    );
+  },
+
   initialState() {
     return {
       cpus: [
@@ -316,6 +325,14 @@ export type RtAction = "add-task" | "remove-task" | "reset";
 
 export const rtEngine: SimulationEngine<RtState, RtAction> = {
   id: "rt",
+  // Demo: add a task that pushes utilization over 1.0 and watch EDF start
+  // missing deadlines.
+  script: [{ type: "add-task", payload: { name: "video", period: 6, wcet: 2 } }],
+
+  done(state) {
+    return state.utilization > 1;
+  },
+
   initialState() {
     const tasks: RtTask[] = [
       { name: "sensor", period: 5, wcet: 2 },

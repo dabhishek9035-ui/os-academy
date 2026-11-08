@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SimShell } from "./SimShell";
+import { StateDiagram } from "./kit";
 import {
   processesEngine,
   type ProcessAction,
@@ -18,6 +19,41 @@ const STATE_STYLES: Record<string, string> = {
   zombie: "border-p-violet/60 text-p-violet",
   terminated: "border-line text-ink-faint line-through",
 };
+
+/** The classic five-state (plus zombie) lifecycle, drawn with the kit. */
+function ProcessStateDiagram({
+  current,
+  caption,
+}: {
+  current: string | null;
+  caption: string;
+}) {
+  return (
+    <StateDiagram
+      caption={caption}
+      current={current}
+      width={620}
+      height={230}
+      states={[
+        { id: "new", label: "new", x: 70, y: 60 },
+        { id: "ready", label: "ready", x: 220, y: 60 },
+        { id: "running", label: "running", x: 380, y: 60 },
+        { id: "zombie", label: "zombie", x: 380, y: 175 },
+        { id: "terminated", label: "terminated", x: 550, y: 175 },
+        { id: "blocked", label: "blocked", x: 220, y: 175 },
+      ]}
+      edges={[
+        { from: "new", to: "ready", label: "admit" },
+        { from: "ready", to: "running", label: "dispatch" },
+        { from: "running", to: "ready", label: "quantum / preempt" },
+        { from: "running", to: "blocked", label: "block (I/O)" },
+        { from: "blocked", to: "ready", label: "unblock" },
+        { from: "running", to: "zombie", label: "exit" },
+        { from: "zombie", to: "terminated", label: "wait() reaps" },
+      ]}
+    />
+  );
+}
 
 export function ProcessLab() {
   return (
@@ -93,6 +129,9 @@ function ProcessTable({
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const sel = state.processes.find((p) => p.pid === selected) ?? null;
+  const currentState = sel ? sel.state : state.runningPid !== null
+    ? (state.processes.find((p) => p.pid === state.runningPid)?.state ?? null)
+    : null;
 
   return (
     <div className="space-y-3">
@@ -101,6 +140,15 @@ function ProcessTable({
           {state.error}
         </p>
       ) : null}
+
+      <ProcessStateDiagram
+        current={currentState}
+        caption={
+          sel
+            ? `Five-state model — token on ${sel.name}'s current state (${sel.state}).`
+            : "Five-state model — token on the running process (select a row to track it instead)."
+        }
+      />
 
       <div className="overflow-x-auto rounded-lg border border-line">
         <table className="w-full min-w-[560px] text-sm">
@@ -128,7 +176,7 @@ function ProcessTable({
                 <td className="px-2.5 py-1.5 font-mono text-xs text-ink-faint">{p.ppid ?? "—"}</td>
                 <td className="px-2.5 py-1.5">{p.name}</td>
                 <td className="px-2.5 py-1.5">
-                  <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] ${STATE_STYLES[p.state]}`}>
+                  <span className={`inline-block rounded-md border px-2 py-0.5 text-xs ${STATE_STYLES[p.state]}`}>
                     {p.state}
                     {p.state === "blocked" && p.blockedReason ? ` (${p.blockedReason})` : ""}
                   </span>
@@ -144,7 +192,7 @@ function ProcessTable({
                           style={{ width: `${Math.min(100, (p.progress / Math.max(1, p.burst)) * 100)}%` }}
                         />
                       </span>
-                      <span className="font-mono text-[11px] text-ink-faint">
+                      <span className="font-mono text-xs text-ink-faint">
                         {p.progress}/{p.burst}
                       </span>
                     </span>
@@ -219,7 +267,7 @@ function ProcessTable({
         <div className="rounded-lg border border-line bg-bg-soft p-3">
           <span className="section-label">Selected PCB (Process Control Block)</span>
           {sel ? (
-            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px] text-ink-muted">
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-xs text-ink-muted">
               <dt>pid</dt><dd>{sel.pid}</dd>
               <dt>ppid</dt><dd>{sel.ppid ?? "null (root)"}</dd>
               <dt>state</dt><dd>{sel.state}</dd>
@@ -264,7 +312,7 @@ function ProcessTree({
     <li key={p.pid} style={{ marginLeft: depth * 16 }}>
       <button
         type="button"
-        className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
+        className={`rounded px-1.5 py-0.5 font-mono text-xs ${
           selected === p.pid ? "bg-accent-soft text-ink" : "text-ink-muted hover:text-ink"
         }`}
         onClick={() => onSelect(p.pid)}
