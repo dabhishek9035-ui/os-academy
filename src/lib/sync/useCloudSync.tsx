@@ -71,6 +71,11 @@ export function CloudSyncBridge() {
           if (decision.winner === "remote") {
             useProgressStore.setState(decision.adopt!);
           }
+        } else {
+          // First sync for this account: seed the cloud with the local
+          // state so every user has its rows immediately (and so the
+          // merge policy has an updatedAt anchor from now on).
+          await pushProgress(userId, localProgress);
         }
 
         // Settings: no timestamp inside the store; the bridge keeps the last
@@ -86,6 +91,11 @@ export function CloudSyncBridge() {
             useSettingsStore.setState(decision.adopt!);
           }
           writeMeta("settingsUpdatedAt", remoteSettings.updatedAt);
+        } else {
+          await pushSettings(userId, localSettings);
+          // The cloud row now carries the authoritative timestamp.
+          const seeded = await pullSettings(userId);
+          if (seeded) writeMeta("settingsUpdatedAt", seeded.updatedAt);
         }
         auth.markSynced();
       } catch (err) {
