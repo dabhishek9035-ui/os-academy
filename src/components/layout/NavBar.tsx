@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useSettingsStore } from "@/lib/settings/store";
 import { MoonIcon, SunIcon, TerminalIcon, CubeIcon } from "@/components/ui/icons";
+import { CloudAuthNav } from "@/components/layout/CloudAuthNav";
 
 const LINKS = [
   { href: "/", label: "Home" },
@@ -78,6 +79,7 @@ export function NavBar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5">
+          <CloudAuthNav />
           <Link href="/settings" className="btn btn-ghost px-2" aria-label="Settings" title="Settings">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
               <circle cx="8" cy="8" r="2.4" />
