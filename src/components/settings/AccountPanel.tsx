@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { isCloudConfigured } from "@/lib/supabase/browser";
 import { useCloudAuthStore } from "@/lib/sync/auth-store";
 import {
   pushProgress,
   pushSettings,
-  signIn,
   signOut,
-  signUp,
 } from "@/lib/sync/cloud";
 import { useProgressStore } from "@/lib/progress/store";
 import { useSettingsStore } from "@/lib/settings/store";
+import { AuthForm } from "@/components/auth/AuthForm";
 
 /**
  * Account & cloud-sync panel for the Settings page. Honest about every
@@ -105,8 +104,16 @@ export function AccountPanel() {
     );
   }
 
-  return <SignInForm />;
+  return (
+    <section className="card panel-pad" aria-labelledby="account-heading">
+      <h2 id="account-heading" className="text-base font-semibold text-ink">
+        Account &amp; sync
+      </h2>
+      <AuthForm blurb="Sign in to keep your progress on your Supabase project — it survives clearing site data and follows you to other devices. Without an account, everything stays in this browser." />
+    </section>
+  );
 }
+
 
 function SaveNowButton() {
   const [saving, setSaving] = useState(false);
@@ -159,111 +166,5 @@ function SignOutButton() {
     >
       {busy ? "Signing out…" : "Sign out"}
     </button>
-  );
-}
-
-function SignInForm() {
-  const setStatus = useCloudAuthStore((s) => s.setStatus);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setInfo(null);
-    setBusy(true);
-    try {
-      if (mode === "sign-up") {
-        const result = await signUp(email.trim(), password);
-        if (result.needsEmailConfirmation) {
-          setInfo(
-            "Account created — check your inbox for a confirmation link, then sign in here. (You can also disable \"Confirm email\" in the Supabase dashboard for local testing.)",
-          );
-        }
-        // If a session exists already (confirmation disabled), the bridge's
-        // onAuthStateChange flips the app to signed-in on its own.
-      } else {
-        await signIn(email.trim(), password);
-        setStatus("signed-in"); // bridge refines with the real user object
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section className="card panel-pad" aria-labelledby="account-heading">
-      <h2 id="account-heading" className="text-base font-semibold text-ink">
-        Account &amp; sync
-      </h2>
-      <p className="mt-2 text-sm text-ink-muted">
-        Sign in to keep your progress on your Supabase project — it survives
-        clearing site data and follows you to other devices. Without an
-        account, everything stays in this browser.
-      </p>
-      <form className="mt-3 space-y-2.5" action="#" onSubmit={submit}>
-        <label className="block text-xs text-ink-muted">
-          Email
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2.5 text-sm text-ink"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </label>
-        <label className="block text-xs text-ink-muted">
-          Password
-          <input
-            type="password"
-            required
-            minLength={6}
-            autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-            className="mt-1 w-full rounded-md border border-line bg-panel px-3 py-2.5 text-sm text-ink"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            aria-describedby="password-hint"
-          />
-          <span id="password-hint" className="mt-1 block text-ink-faint">
-            at least 6 characters
-          </span>
-        </label>
-        {error ? (
-          <p role="alert" className="rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-xs text-ink">
-            {error}
-          </p>
-        ) : null}
-        {info ? (
-          <p role="status" className="rounded-lg border border-ok/40 bg-ok/10 px-3 py-2 text-xs text-ink">
-            {info}
-          </p>
-        ) : null}
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="submit" className="btn btn-primary text-xs" disabled={busy}>
-            {busy ? "Working…" : mode === "sign-in" ? "Sign in" : "Create account"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost text-xs"
-            onClick={() => {
-              setMode(mode === "sign-in" ? "sign-up" : "sign-in");
-              setError(null);
-              setInfo(null);
-            }}
-          >
-            {mode === "sign-in"
-              ? "No account yet? Create one"
-              : "Already have an account? Sign in"}
-          </button>
-        </div>
-      </form>
-    </section>
   );
 }
