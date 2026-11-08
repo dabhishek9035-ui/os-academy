@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Equation, Lesson, LessonSection } from "@/types";
+import { presentMcq } from "@/lib/mcq/shuffle";
 import { getSimComponent, simTitle, SimPlaceholder } from "@/components/visualizations/registry";
 import { Paragraphs, Inline } from "./Inline";
 import { CheckIcon, XIcon } from "@/components/ui/icons";
@@ -227,18 +228,21 @@ function CheckQuestionCard({
   q: { id: string; q: string; options: string[]; answerIndex: number; explanation: string };
   index: number;
 }) {
+  // Content was authored with the correct answer first; present a stable,
+  // id-seeded permutation so the answer is not predictably option A.
+  const view = presentMcq(q);
   const [picked, setPicked] = useState<number | null>(null);
   const name = `check-${q.id}`;
   return (
     <fieldset className="card panel-pad">
       <legend className="sr-only">Knowledge check {index}</legend>
       <p className="text-sm font-medium text-ink">
-        {index}. <Inline text={q.q} />
+        {index}. <Inline text={view.q} />
       </p>
       <div className="mt-2.5 space-y-1.5">
-        {q.options.map((opt, i) => {
+        {view.options.map((opt, i) => {
           const isPicked = picked === i;
-          const isCorrect = i === q.answerIndex;
+          const isCorrect = i === view.answerIndex;
           const state =
             picked === null ? "idle" : isCorrect ? "correct" : isPicked ? "wrong" : "idle";
           return (
@@ -266,8 +270,8 @@ function CheckQuestionCard({
       </div>
       {picked !== null ? (
         <p className="mt-2.5 rounded-lg bg-panel-soft px-3 py-2 text-xs leading-relaxed text-ink-muted">
-          {picked === q.answerIndex ? "Correct — " : "Not quite — "}
-          {q.explanation}
+          {picked === view.answerIndex ? "Correct — " : "Not quite — "}
+          {view.explanation}
         </p>
       ) : null}
     </fieldset>
