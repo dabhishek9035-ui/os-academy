@@ -73,8 +73,12 @@ describe("resolveBlob", () => {
 });
 
 describe("isPristineProgress (the clear-site-data rule)", () => {
-  const empty = { modules: {}, activity: [] };
-  const withWork = {
+  interface TestProgress {
+    modules: Record<string, { lessonsDone: string[] }>;
+    activity: { ts: string; kind: string; label: string }[];
+  }
+  const empty: TestProgress = { modules: {}, activity: [] };
+  const withWork: TestProgress = {
     modules: { "intro-computers-os": { lessonsDone: ["intro-computers-os/what-is-a-computer"] } },
     activity: [{ ts: "2026-11-08T10:00:00Z", kind: "lesson", label: "Completed lesson" }],
   };
