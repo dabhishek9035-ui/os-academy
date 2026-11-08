@@ -43,3 +43,23 @@ export function resolveBlob<T>(
   const winner = newerWins(local.updatedAt, remote.updatedAt);
   return { adopt: winner === "remote" ? remote.data : local.data, winner };
 }
+
+/**
+ * A freshly booted progress store (after clearing site data, or a brand-new
+ * device) stamps itself "modified now" — which would always out-rank the
+ * cloud and silently discard the user's history. An empty local state has
+ * NO claim: when it is pristine, the cloud wins unconditionally. Only real
+ * local work (any completed lesson, quiz attempt or activity) competes on
+ * timestamps.
+ */
+export function isPristineProgress(state: {
+  modules: unknown;
+  activity: unknown;
+}): boolean {
+  const modulesEmpty =
+    !state.modules ||
+    typeof state.modules !== "object" ||
+    Object.keys(state.modules).length === 0;
+  const activityEmpty = !Array.isArray(state.activity) || state.activity.length === 0;
+  return modulesEmpty && activityEmpty;
+}

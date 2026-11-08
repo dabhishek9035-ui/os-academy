@@ -11,7 +11,7 @@ import {
   pushProgress,
   pushSettings,
 } from "./cloud";
-import { resolveBlob } from "./merge";
+import { resolveBlob, isPristineProgress } from "./merge";
 import { useCloudAuthStore } from "./auth-store";
 
 /**
@@ -64,10 +64,14 @@ export function CloudSyncBridge() {
 
         const localProgress = useProgressStore.getState();
         if (remoteProgress) {
-          const decision = resolveBlob(
-            { data: localProgress, updatedAt: localProgress.updatedAt },
-            remoteProgress,
-          );
+          // A freshly booted (pristine) local store has no claim on the
+          // cloud: it would stamp itself "now" and erase real history.
+          const decision = isPristineProgress(localProgress)
+            ? { adopt: remoteProgress.data as typeof localProgress, winner: "remote" as const }
+            : resolveBlob(
+                { data: localProgress, updatedAt: localProgress.updatedAt },
+                remoteProgress,
+              );
           if (decision.winner === "remote") {
             useProgressStore.setState(decision.adopt!);
           }
