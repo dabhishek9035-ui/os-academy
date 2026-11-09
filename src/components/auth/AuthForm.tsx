@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { signIn, signUp } from "@/lib/sync/cloud";
 
 /**
@@ -24,6 +24,14 @@ export function AuthForm({
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("confirmed") === "1") {
+      setMode("sign-in");
+      setInfo("Email confirmed. Sign in with your new account.");
+    }
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

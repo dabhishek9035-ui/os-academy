@@ -100,7 +100,15 @@ export async function signUp(
   password: string,
 ): Promise<{ needsEmailConfirmation: boolean }> {
   const supabase = getSupabaseBrowser()!;
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      // Use the origin where the account was created instead of Supabase's
+      // project Site URL (which is often still localhost in deployed apps).
+      emailRedirectTo: `${window.location.origin}/settings?confirmed=1`,
+    },
+  });
   if (error) throw new Error(signupErrorMessage(error.message));
   return { needsEmailConfirmation: data.session === null };
 }
